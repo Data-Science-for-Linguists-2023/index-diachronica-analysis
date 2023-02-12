@@ -1,1 +1,1 @@
-# index-diachronica-analysis
+# Analysis of the *Index Diachronica*
