@@ -1,7 +1,7 @@
 from bs4 import BeautifulSoup
 from bs4.element import ResultSet, Tag
 from typing import Tuple
-import numpy as np
+import pickle
 import re
 import jsons
 import itertools
@@ -11,7 +11,7 @@ class Rule:
     branch_id: str # Proto-Omotic
     from_sound: str # 'dʒ'
     intermediate_steps: list[str] # ['tʃ']
-    to_sound: list[str] # 'ʃ'
+    to_sound: str # 'ʃ'
     original_text: str # dʒ → tʃ → ʃ
 
 class Branch:
@@ -53,6 +53,20 @@ def split_sounds(sounds: str) -> list[str]:
     """
     return re.findall(r'(?:\[.*?\]|\S)+', sounds)
 
+def handle_brackets(sound: str) -> list[str]:
+    """Handles bracketed sounds"""
+    sounds: list[str] = []
+    if bracket_matches := re.match(r'^(\D+)?\{(.*)\}(\D+)?$', sound):
+        # print(f'bracketed sound {sound}')
+        prefix = str(bracket_matches.group(1) or '')
+        split = bracket_matches.group(2).split(',')
+        suffix = str(bracket_matches.group(3) or '')
+        for sound in split:
+            sounds.append(prefix + sound + suffix)
+    else:
+        sounds.append(sound)
+    return sounds
+
 def parse_rule_steps(steps: str) -> list[Tuple[str, list[str], str]]:
     """Parse out the steps of a rule"""
     rules: list[Tuple[str, list[str], str]] = []
@@ -77,7 +91,11 @@ def parse_rule_steps(steps: str) -> list[Tuple[str, list[str], str]]:
             print(f'Warning: mismatched lengths for rule: {steps} ({from_sounds}, {intermediates}, {to_sounds}) ({len(from_sounds)}, {[len(im) for im in intermediates],}, {len(to_sounds)})')
         
         for index, from_sound in enumerate(from_sounds):
-            rules.append((from_sound, [im[index] for im in intermediates], to_sounds[index]))
+            unbracketed_froms = handle_brackets(from_sound)
+            unbracketed_tos = handle_brackets(to_sounds[index])
+            for unb_from in unbracketed_froms:
+                for unb_to in unbracketed_tos:
+                    rules.append((unb_from, [im[index] for im in intermediates], unb_to))
     else:
         from_sounds = split_sounds(rule_split[0])
         to_sounds = split_sounds(rule_split[1])
@@ -85,20 +103,15 @@ def parse_rule_steps(steps: str) -> list[Tuple[str, list[str], str]]:
             print(f'Warning: mismatched lengths for rule: {steps} ({from_sounds}, {to_sounds}) ({len(from_sounds)}, {len(to_sounds)})')
         
         for index, from_sound in enumerate(from_sounds):
-            # handle a{s,t}b
-            if bracket_matches := re.match(r'^(\D)?\{(.*)\}(\D)?$', from_sound):
-                # print(f'bracketed sound {from_sound}')
-                prefix = str(bracket_matches.group(1) or '')
-                split = bracket_matches.group(2).split(',')
-                suffix = str(bracket_matches.group(3) or '')
-                for sound in split:
-                    rules.append((prefix + sound + suffix, [], to_sounds[index]))
-            else:
-                rules.append((from_sound, [], to_sounds[index]))
+            unbracketed_froms = handle_brackets(from_sound)
+            unbracketed_tos = handle_brackets(to_sounds[index])
+            for unb_from in unbracketed_froms:
+                for unb_to in unbracketed_tos:
+                    rules.append((unb_from, [], unb_to))
     
     return rules
 
-def parse_sound_change(rule_string: str, id: str, decoded: str) -> list[Rule]:
+def parse_sound_change(rule_string: str, rule_id: str, decoded: str) -> list[Rule]:
     """Parse the rules for a sound change."""
     rules: list[Rule] = []
 
@@ -142,7 +155,7 @@ def parse_sound_change(rule_string: str, id: str, decoded: str) -> list[Rule]:
     for split_rule in [sr for i, sr in enumerate(split_rules) if sr not in split_rules[:i]]:
         rule = Rule()
 
-        rule.id = id
+        rule.id = rule_id
         rule.original_text = decoded
         rule.environment = environment
         rule.from_sound, rule.intermediate_steps, rule.to_sound = split_rule
@@ -211,13 +224,21 @@ def parse_sid() -> None:
                     # leave out anything else weird, for now
             
             rule_string = ''.join(rule_parts)
-            rules += parse_sound_change(rule_string, sound_change.id, sound_change.decode_contents())
+            rules += parse_sound_change(rule_string, sound_change['id'], sound_change.decode_contents())
+
+    print(f'Finished parsing {len(branches)} branches and {len(rules)} rules.')
 
     with open('./data/branches.json', 'w+') as branches_file:
         branches_file.write(jsons.dumps(branches, { 'indent': 4, 'ensure_ascii': False }))
 
     with open('./data/rules.json', 'w+') as rules_file:
         rules_file.write(jsons.dumps(rules, { 'indent': 4, 'ensure_ascii': False }))
+
+    with open('./data/branches.pkl', 'wb+') as branches_file:
+        pickle.dump(branches, branches_file)
+
+    with open('./data/rules.pkl', 'wb+') as rules_file:
+        pickle.dump(rules, rules_file)
 
 # So I can both run this individually AND import functions into my notebook
 if __name__ == '__main__':
