@@ -46,6 +46,14 @@ sups = {
     's': 'ˢ'
 }
 
+def remove_combos(string: str, combos: tuple[tuple[int, int, str], ...]) -> str:
+    """Removes combos of optionals from a string."""
+    removed = string
+    for (start, end, optional) in combos:
+        removed = removed[:start] + ('�' * (end - start)) + removed[end:]
+    
+    return removed.replace('�', '')
+
 def split_sounds(sounds: str) -> list[str]:
     """Split the sounds in a rule.
 
@@ -53,18 +61,33 @@ def split_sounds(sounds: str) -> list[str]:
     """
     return re.findall(r'(?:\[.*?\]|\S)+', sounds)
 
-def handle_brackets(sound: str) -> list[str]:
+def handle_brackets(sound: str) -> set[str]:
     """Handles bracketed sounds"""
-    sounds: list[str] = []
-    if bracket_matches := re.match(r'^(\D+)?\{(.*)\}(\D+)?$', sound):
-        # print(f'bracketed sound {sound}')
-        prefix = str(bracket_matches.group(1) or '')
-        split = bracket_matches.group(2).split(',')
-        suffix = str(bracket_matches.group(3) or '')
-        for sound in split:
-            sounds.append(prefix + sound + suffix)
-    else:
-        sounds.append(sound)
+    sounds: set[str] = set()
+
+    # find innermost bracket and recurse
+    bracket_start: int = 0
+    bracket_end: int = 0
+
+    # Gotta do bracket matching. Ugh
+    for (index, character) in enumerate(sound):
+        if character == '{':
+            bracket_start = index
+        elif character == '}':
+            bracket_end = index
+            break
+    
+    if (bracket_start == 0 and bracket_end == 0):
+        return set([sound])
+    
+    # print(sound[bracket_start : bracket_end+1])
+    
+    inner_sounds = sound[bracket_start + 1 : bracket_end].split(',')
+
+    for inner_sound in inner_sounds:
+        repl_sound = sound[:bracket_start] + inner_sound + sound[bracket_end + 1:]
+        sounds |= handle_brackets(repl_sound)
+    
     return sounds
 
 def parse_rule_steps(steps: str) -> list[Tuple[str, list[str], str]]:
@@ -131,7 +154,7 @@ def parse_sound_change(rule_string: str, rule_id: str, decoded: str) -> list[Rul
         environment = env_split[1]
     else:
         # If no environment, but rule ends with some text in parentheses or quotes, consider that the environment
-        parens_match = re.search(r'(.+) (\(.+\)|“.+”)$', rule_string)
+        parens_match = re.search(r'(.+[^→]) (\(.+\)|“.+”)$', rule_string)
         if parens_match:
             env_split[0] = parens_match.group(1)
             environment = parens_match.group(2)
@@ -139,14 +162,15 @@ def parse_sound_change(rule_string: str, rule_id: str, decoded: str) -> list[Rul
     split_rules: list[Tuple[str,list[str],str]] = []
 
     # if there are any optional bits, run the split with all possible combinations of with and without them
-    optionals = re.findall(r'(\(.*?\))', env_split[0])
+    optionals = [(match.start(), match.end(), match.group(0)) for match in re.finditer(r'(\(.*?\))', env_split[0])]
     if (optionals):
         combinations = list(itertools.chain.from_iterable(itertools.combinations(optionals, l) for l in range(len(optionals) + 1)))
         for combo in combinations:
             combo_string = env_split[0]
-            for to_replace in combo:
-                combo_string = combo_string.replace(to_replace, '')
+            # print(combo)
+            combo_string = remove_combos(combo_string, combo)
             combo_string = combo_string.replace('(','').replace(')','')
+            # print(combo_string)
             split_rules += parse_rule_steps(combo_string)
     else:
         split_rules += parse_rule_steps(env_split[0])
