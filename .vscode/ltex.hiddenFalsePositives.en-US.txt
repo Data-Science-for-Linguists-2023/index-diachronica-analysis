@@ -1,0 +1,1 @@
+{"rule":"INTERJECTIONS_PUNCTUATION","sentence":"^\\QOh well.\\E$"}

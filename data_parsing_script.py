@@ -9,6 +9,7 @@ import itertools
 class Rule:
     id: str # Proto-Omotic-dʒ
     branch_id: str # Proto-Omotic
+    branch_index: str # 6.1
     from_sound: str # 'dʒ'
     intermediate_steps: list[str] # ['tʃ']
     to_sound: str # 'ʃ'
@@ -134,7 +135,7 @@ def parse_rule_steps(steps: str) -> list[Tuple[str, list[str], str]]:
     
     return rules
 
-def parse_sound_change(rule_string: str, rule_id: str, decoded: str) -> list[Rule]:
+def parse_sound_change(rule_string: str, rule_id: str = '', branch: Branch = None, decoded: str = '') -> list[Rule]:
     """Parse the rules for a sound change."""
     rules: list[Rule] = []
 
@@ -180,6 +181,8 @@ def parse_sound_change(rule_string: str, rule_id: str, decoded: str) -> list[Rul
         rule = Rule()
 
         rule.id = rule_id
+        rule.branch_id = branch.id if branch else None
+        rule.branch_index = branch.index if branch else None
         rule.original_text = decoded
         rule.environment = environment
         rule.from_sound, rule.intermediate_steps, rule.to_sound = split_rule
@@ -248,7 +251,7 @@ def parse_sid() -> None:
                     # leave out anything else weird, for now
             
             rule_string = ''.join(rule_parts)
-            rules += parse_sound_change(rule_string, sound_change['id'], sound_change.decode_contents())
+            rules += parse_sound_change(rule_string, sound_change['id'], branch, sound_change.decode_contents())
 
     print(f'Finished parsing {len(branches)} branches and {len(rules)} rules.')
 

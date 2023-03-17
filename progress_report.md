@@ -11,3 +11,15 @@ Repo created, project plan filled out, other necessary files created.
 ## Data sharing plan
 
 All of my data will be included under [the data directory](data/), as it is licensed under CC BY-NC-SA 3.0, which allows the sharing of the data, as long as the shared data is also licensed under CC BY-NC-SA 3.0.
+
+# 2nd Progress Report: 3/17/23
+
+3/17: I made a few small improvements to the parsing to address some of the lingering problems I noted in my data parsing script before. I added some information about that at the end of the existing data parsing script.
+
+## Data sharing scheme
+
+I am still sharing my data the way I said I would be in the first progress report.
+
+## License
+
+I went with the GNU GPLv3 license, as I am open to my code being re-used and modified as long as that re-use gives credit to my work.
