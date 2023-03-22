@@ -35,16 +35,6 @@ def test_parse_optional_step():
   assert parsed_change[1].intermediate_steps == unordered([])
   assert parsed_change[1].to_sound == 'yj'
 
-def test_parse_optional_step():
-  parsed_change = dps.parse_sound_change('ew (→ øj) → yj', '', '')
-  assert len(parsed_change) == 2
-  assert parsed_change[0].from_sound == 'ew'
-  assert parsed_change[0].intermediate_steps == unordered(['øj'])
-  assert parsed_change[0].to_sound == 'yj'
-  assert parsed_change[1].from_sound == 'ew'
-  assert parsed_change[1].intermediate_steps == unordered([])
-  assert parsed_change[1].to_sound == 'yj'
-
 def test_parse_optional_sounds():
   parsed_change = dps.parse_sound_change('(C)x(C) → (C)a(C)', '', '')
   change_tuples = [(rule.from_sound, rule.intermediate_steps, rule.to_sound) for rule in parsed_change]

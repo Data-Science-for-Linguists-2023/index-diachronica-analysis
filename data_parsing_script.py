@@ -81,6 +81,9 @@ def handle_brackets(sound: str) -> set[str]:
     if (bracket_start == 0 and bracket_end == 0):
         return set([sound])
     
+    if (bracket_end == 0):
+        bracket_end = len(sound)
+    
     # print(sound[bracket_start : bracket_end+1])
     
     inner_sounds = sound[bracket_start + 1 : bracket_end].split(',')
