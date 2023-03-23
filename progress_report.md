@@ -16,6 +16,8 @@ All of my data will be included under [the data directory](data/), as it is lice
 
 3/17: I made a few small improvements to the parsing to address some of the lingering problems I noted in my data parsing script before. I added some information about that at the end of the existing data parsing script.
 
+3/21: I added an entirely new parsing step that pulls out vowel changes and the environments in which those vowel changes occurred. This is because I decided on a new area of analysis - seeing how vowel changes are affected by the neighboring consonants. This required using some additional libraries for getting information about IPA symbols, etc., as well. Information on this parsing is at the end of [data_parsing.ipynb](data_parsing.ipynb). I also started some basic analysis in [analysis.ipynb](analysis.ipynb), but haven't gotten very far in the vowel change analysis.
+
 ## Data sharing scheme
 
 I am still sharing my data the way I said I would be in the first progress report.

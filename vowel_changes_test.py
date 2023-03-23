@@ -8,7 +8,7 @@ def ipa_str_to_str(ipa_str: IPAString) -> str:
   return ''.join([char.unicode_repr for char in ipa_str.ipa_chars])
 
 def phones_to_strs(phones: tuple[IPAString | None, ...]) -> list[str | None]:
-  return [ipa_str_to_str(ipa_str) if ipa_str else None for ipa_str in phones]
+  return [ipa_str_to_str(ipa_str) if ipa_str else None for ipa_str in phones[:4]]
 
 def test_extract_long_vowel():
   phones = vc.extract_from_sound('Caːd')
@@ -48,42 +48,50 @@ def test_parse_environment_nested_bracketed():
   assert vc.parse_environment('_{{l,f},d}#') == unordered(['_l#', '_f#', '_d#'])
 
 def test_extract_change_no_vowels():
-  assert vc.extract_vowel_changes('ts', 's', '') == None
+  assert vc.extract_vowel_changes('ts', 's', '', '') == None
 
 def test_extract_change_multi_vowels():
-  assert vc.extract_vowel_changes('baːde', 'bode', '') == None
+  assert vc.extract_vowel_changes('baːde', 'bode', '', '') == None
+
+def test_extract_change_vowel_environment():
+  assert vc.extract_vowel_changes('a', 'o', '_u', '') == None
 
 def test_extract_change_no_env():
-  phone_tuples = vc.extract_vowel_changes('baːd', 'bod', '')
+  phone_tuples = vc.extract_vowel_changes('baːd', 'bod', '', '')
   assert phone_tuples != None
   assert [phones_to_strs(phone_tup) for phone_tup in phone_tuples] == unordered([['b', 'aː', 'o', 'd']])
 
 def test_extract_change_no_to_vowel():
-  phone_tuples = vc.extract_vowel_changes('baːd', 'bd', '')
+  phone_tuples = vc.extract_vowel_changes('baːd', 'bd', '', '')
   assert phone_tuples != None
   assert [phones_to_strs(phone_tup) for phone_tup in phone_tuples] == unordered([['b', 'aː', None, 'd']])
 
 def test_extract_change_env_before():
-  phone_tuples = vc.extract_vowel_changes('aːd', 'od', 'f_')
+  phone_tuples = vc.extract_vowel_changes('aːd', 'od', 'f_', '')
   assert phone_tuples != None
   assert [phones_to_strs(phone_tup) for phone_tup in phone_tuples] == unordered([['f', 'aː', 'o', 'd']])
 
 def test_extract_change_env_after():
-  phone_tuples = vc.extract_vowel_changes('daː', 'do', '_f')
+  phone_tuples = vc.extract_vowel_changes('daː', 'do', '_f', '')
   assert phone_tuples != None
   assert [phones_to_strs(phone_tup) for phone_tup in phone_tuples] == unordered([['d', 'aː', 'o', 'f']])
 
 def test_extract_change_mult_env():
-  phone_tuples = vc.extract_vowel_changes('aː', 'o', '_{w,v}')
+  phone_tuples = vc.extract_vowel_changes('aː', 'o', '_{w,v}', '')
   assert phone_tuples != None
   assert [phones_to_strs(phone_tup) for phone_tup in phone_tuples] == unordered([[None, 'aː', 'o', 'w'], [None, 'aː', 'o', 'v']])
 
 def test_extract_change_sq_bracket_sound():
-  phone_tuples = vc.extract_vowel_changes('B', 'E', '')
+  phone_tuples = vc.extract_vowel_changes('B', 'E', '', '')
   assert phone_tuples != None
   assert [phones_to_strs(phone_tup) for phone_tup in phone_tuples] == unordered([[None, 'B', 'E', None]])
 
 def test_extract_change_sq_bracket_env():
-  phone_tuples = vc.extract_vowel_changes('a', 'i', '#C_')
+  phone_tuples = vc.extract_vowel_changes('a', 'i', '#C_', '')
   assert phone_tuples != None
   assert [phones_to_strs(phone_tup) for phone_tup in phone_tuples] == unordered([['C', 'a', 'i', None]])
+
+def test_extract_change_lots_of_optionals():
+  phone_tuples = vc.extract_vowel_changes('aː', 'oː', '#(C)(C)(C)_(C)(C)(C)', '')
+  assert phone_tuples != None
+  assert [phones_to_strs(phone_tup) for phone_tup in phone_tuples] == unordered([['C', 'aː', 'oː', 'C'], [None, 'aː', 'oː', 'C'], ['C', 'aː', 'oː', None], [None, 'aː', 'oː', None]])

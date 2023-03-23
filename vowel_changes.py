@@ -59,7 +59,7 @@ def phone_to_ipastring(phone: Phone, replacements: list[str] = []) -> IPAString 
   return IPAString(ipachars)
 
 def extract_from_sound(sound: str) -> tuple[IPAString | None, IPAString | None, IPAString | None] | None:
-  sound = re.sub(r'\[.+?\]', '', sound)
+  sound = re.sub(pattern=r'\[.+?\]', repl='', string=sound)
   (abbev_parsed_sound, replacements) = replace_abbreviations(sound, True)
   pron = Pronunciation.from_string(abbev_parsed_sound)
   # print(pron)
@@ -115,16 +115,20 @@ def extract_from_environment(environment: str) -> tuple[IPAString | None, IPAStr
         return None
       
       if index > 0:
+        if pron.phones[index - 1].is_vowel:
+          return None # ignore environments where before/after a vowel
         before = phone_to_ipastring(pron.phones[index - 1], replacements)
 
       if index < (len(pron.phones) - 1):
+        if pron.phones[index + 1].is_vowel:
+          return None # ignore environments where before/after a vowel
         after = phone_to_ipastring(pron.phones[index + 1], replacements)
       
       found = True
   
   return (before, after)
 
-def extract_vowel_changes(from_sound: str, to_sound: str, environment: str) -> list[tuple[IPAString | None, IPAString, IPAString | None, IPAString | None]] | None:
+def extract_vowel_changes(from_sound: str, to_sound: str, environment: str, original_text: str) -> list[tuple[IPAString | None, IPAString, IPAString | None, IPAString | None, str]] | None:
   from_tuple = extract_from_sound(from_sound)
   if from_tuple == None:
     return None
@@ -138,7 +142,7 @@ def extract_vowel_changes(from_sound: str, to_sound: str, environment: str) -> l
   _, to_vowel, _ = to_tuple
 
   if (before == None) or (after == None):
-    changes = set()
+    changes = []
     for parsed_env in parse_environment(environment):
       env_extract = extract_from_environment(parsed_env)
       if env_extract:
@@ -147,10 +151,14 @@ def extract_vowel_changes(from_sound: str, to_sound: str, environment: str) -> l
           env_before = before
         if after:
           env_after = after
-        changes.add((env_before, from_vowel, to_vowel, env_after))
-    return list(changes)
+        change_tup = (env_before, from_vowel, to_vowel, env_after, original_text)
+        if not any(str(change) == str(change_tup) for change in changes):
+          changes.append((env_before, from_vowel, to_vowel, env_after, original_text))
+    if len(changes) == 0:
+      return None
+    return changes
   else:
-    return [(before, from_vowel, to_vowel, after)]
+    return [(before, from_vowel, to_vowel, after, original_text)]
 
 def get_cons_feats(row, col: str) -> tuple[str | None, str | None, str | None, list[str] | None]:
   voicing: str = ''
@@ -204,10 +212,10 @@ def run_extraction():
   rules_df = pd.DataFrame.from_records([vars(rule) for rule in rules])
 
   extract_vowel_changes_vec = np.vectorize(extract_vowel_changes)
-  extracted = extract_vowel_changes_vec(rules_df['from_sound'], rules_df['to_sound'], rules_df['environment'])
+  extracted = extract_vowel_changes_vec(rules_df['from_sound'], rules_df['to_sound'], rules_df['environment'], rules_df['original_text'])
   extracted = extracted[extracted != None]
   extracted_flat = [item for sublist in extracted for item in sublist]
-  extracted_df = pd.DataFrame(extracted_flat, columns=['before', 'from_vowel', 'to_vowel', 'after'])
+  extracted_df = pd.DataFrame(extracted_flat, columns=['before', 'from_vowel', 'to_vowel', 'after', 'original_text'])
 
   # Add columns for individual features of vowels
   extracted_df[['before_voicing', 'before_place', 'before_manner', 'before_modifiers']] = extracted_df.apply(get_cons_feats, axis=1, result_type='expand', col='before')
