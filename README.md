@@ -7,3 +7,5 @@ An analysis of the *[Index Diachronica](https://chridd.nfshost.com/diachronica/)
 The *Index* was compiled by Galen Buttitta, and the online *Searchable Index Diachronica*, which I am pulling from, was adapted by chri d. d.
 
 The data contained in the `data/` directory is all licensed under the Creative Commons Attribution-NonCommercial-ShareAlike (CC BY-NC-SA) 3.0 license.
+
+**[Guestbook](https://github.com/Data-Science-for-Linguists-2023/Class-Lounge/blob/main/guestbooks/wilson.md)**
