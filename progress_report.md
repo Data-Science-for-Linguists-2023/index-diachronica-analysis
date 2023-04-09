@@ -32,4 +32,4 @@ First, I caught a bug in the vowel change script where characters where a diacri
 
 My data files are updated to account for these changes in parsing.
 
-I then did a more analysis, continuing in [analysis.ipynb](analysis.ipynb). I looked at the tendencies for different types of consonants to cause different types of changes in vowels using heatmaps. Still to-do is to look at how modifiers affect / are affected.
+I then did more analysis, continuing in [analysis.ipynb](analysis.ipynb). I looked at the tendencies for different types of consonants to cause different types of changes in vowels using heatmaps. Still to-do is to look at how modifiers affect / are affected.
