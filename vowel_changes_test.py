@@ -29,6 +29,21 @@ def test_extract_no_after():
   assert phones != None
   assert phones_to_strs(phones) == ['f', 'e', None]
 
+def test_extract_vowel_with_tilde():
+  phones = vc.extract_from_sound('õː')
+  assert phones != None
+  assert phones_to_strs(phones) == [None, 'õː', None]
+
+def test_extract_consonant_ejective():
+  phones = vc.extract_from_sound('kʼə')
+  assert phones != None
+  assert phones_to_strs(phones) == ['kʼ', 'ə', None]
+
+def test_extract_consonant_palatal():
+  phones = vc.extract_from_sound('ətʲ')
+  assert phones != None
+  assert phones_to_strs(phones) == [None, 'ə', 'tʲ']
+
 def test_parse_environment_normal():
   assert vc.parse_environment('_d#') == unordered(['_d#'])
 
@@ -95,3 +110,8 @@ def test_extract_change_lots_of_optionals():
   phone_tuples = vc.extract_vowel_changes('aː', 'oː', '#(C)(C)(C)_(C)(C)(C)', '')
   assert phone_tuples != None
   assert [phones_to_strs(phone_tup) for phone_tup in phone_tuples] == unordered([['C', 'aː', 'oː', 'C'], [None, 'aː', 'oː', 'C'], ['C', 'aː', 'oː', None], [None, 'aː', 'oː', None]])
+
+def test_extract_change_ejective():
+  phone_tuples = vc.extract_vowel_changes('ə', 'a', 'kʼ_', '')
+  assert phone_tuples != None
+  assert [phones_to_strs(phone_tup) for phone_tup in phone_tuples] == unordered([['kʼ', 'ə', 'a', None]])

@@ -25,3 +25,11 @@ I am still sharing my data the way I said I would be in the first progress repor
 ## License
 
 I went with the GNU GPLv3 license, as I am open to my code being re-used and modified as long as that re-use gives credit to my work.
+
+# 3rd Progress Report: 4/9/23
+
+First, I caught a bug in the vowel change script where characters where a diacritic was combined with the character as a single codepoint were not parsed correctly by ipapy. I had to use `unicodedata` to "normalize" strings and split characters like that into two characters. It also wasn't handling diacritics at all anyway, but that was an easy fix -- I had it treat the values of diacritics as modifiers. In the process of doing this, I realized that affricates weren't being treated as one sound, but were instead being split up (e.g. [ts] becomes [t] + [s]), but this is a limitation of the libraries I'm using and felt like too much work to be worth fixing.
+
+My data files are updated to account for these changes in parsing.
+
+I then did a more analysis, continuing in [analysis.ipynb](analysis.ipynb). I looked at the tendencies for different types of consonants to cause different types of changes in vowels using heatmaps. Still to-do is to look at how modifiers affect / are affected.

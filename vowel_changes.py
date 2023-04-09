@@ -3,8 +3,9 @@ import numpy as np
 from gruut_ipa.phonemes import Pronunciation, Phone
 # Using my own fork, which adds some additional descriptors
 from ipapy import UNICODE_TO_IPA
-from ipapy.ipachar import IPAConsonant, IPAVowel, IPAChar, IPASuprasegmental
+from ipapy.ipachar import IPAConsonant, IPAVowel, IPAChar, IPASuprasegmental, IPADiacritic
 from ipapy.ipastring import IPAString
+import unicodedata as ud
 import re
 import itertools
 from data_parsing_script import Branch, Rule, remove_combos, handle_brackets
@@ -49,7 +50,8 @@ def replace_abbreviations(sound: str, vowels_only: bool = False) -> tuple[str, l
 
 def phone_to_ipastring(phone: Phone, replacements: list[str] = []) -> IPAString | None:
   ipachars: list[IPAChar] = []
-  for char in phone.text:
+  norm_text = ud.normalize('NFD',phone.text)
+  for char in norm_text:
     if char.isdecimal():
       ipachars.append(u_to_ipa_ext[replacements[int(char)]])
     elif char in u_to_ipa_ext:
@@ -62,7 +64,6 @@ def extract_from_sound(sound: str) -> tuple[IPAString | None, IPAString | None, 
   sound = re.sub(pattern=r'\[.+?\]', repl='', string=sound)
   (abbev_parsed_sound, replacements) = replace_abbreviations(sound, True)
   pron = Pronunciation.from_string(abbev_parsed_sound)
-  # print(pron)
   before = None
   vowel = None
   after = None
@@ -73,10 +74,20 @@ def extract_from_sound(sound: str) -> tuple[IPAString | None, IPAString | None, 
         return None
       
       if index > 0:
-        before = phone_to_ipastring(pron.phones[index - 1], replacements)
+        ipastring: IPAString | None = phone_to_ipastring(pron.phones[index - 1], replacements)
+        chars: list[IPAChar] | None = ipastring.ipa_chars if ipastring != None else None
+        if index > 1 and chars != None and chars[0].is_diacritic:
+          before = phone_to_ipastring(pron.phones[index - 2], replacements) + phone_to_ipastring(pron.phones[index - 1], replacements)
+        else:
+          before = phone_to_ipastring(pron.phones[index - 1], replacements)
 
       if index < (len(pron.phones) - 1):
-        after = phone_to_ipastring(pron.phones[index + 1], replacements)
+        ipastring: IPAString | None = phone_to_ipastring(pron.phones[index + 2], replacements) if (index < (len(pron.phones) - 2)) else None
+        chars: list[IPAChar] | None = ipastring.ipa_chars if ipastring != None else None
+        if chars != None and chars[0].is_diacritic:
+          after = phone_to_ipastring(pron.phones[index + 1], replacements) + phone_to_ipastring(pron.phones[index + 2], replacements)
+        else:
+          after = phone_to_ipastring(pron.phones[index + 1], replacements)
       
       vowel = phone_to_ipastring(phone, replacements)
 
@@ -117,12 +128,24 @@ def extract_from_environment(environment: str) -> tuple[IPAString | None, IPAStr
       if index > 0:
         if pron.phones[index - 1].is_vowel:
           return None # ignore environments where before/after a vowel
-        before = phone_to_ipastring(pron.phones[index - 1], replacements)
+        
+        ipastring: IPAString | None = phone_to_ipastring(pron.phones[index - 1], replacements)
+        chars: list[IPAChar] | None = ipastring.ipa_chars if ipastring != None else None
+        if index > 1 and chars != None and chars[0].is_diacritic:
+          before = phone_to_ipastring(pron.phones[index - 2], replacements) + phone_to_ipastring(pron.phones[index - 1], replacements)
+        else:
+          before = phone_to_ipastring(pron.phones[index - 1], replacements)
 
       if index < (len(pron.phones) - 1):
         if pron.phones[index + 1].is_vowel:
           return None # ignore environments where before/after a vowel
-        after = phone_to_ipastring(pron.phones[index + 1], replacements)
+        
+        ipastring: IPAString | None = phone_to_ipastring(pron.phones[index + 2], replacements) if (index < (len(pron.phones) - 2)) else None
+        chars: list[IPAChar] | None = ipastring.ipa_chars if ipastring != None else None
+        if chars != None and chars[0].is_diacritic:
+          after = phone_to_ipastring(pron.phones[index + 1], replacements) + phone_to_ipastring(pron.phones[index + 2], replacements)
+        else:
+          after = phone_to_ipastring(pron.phones[index + 1], replacements)
       
       found = True
   
@@ -177,7 +200,9 @@ def get_cons_feats(row, col: str) -> tuple[str | None, str | None, str | None, l
       voicing = cast(IPAConsonant, char).voicing
       place = cast(IPAConsonant, char).place
       manner = cast(IPAConsonant, char).manner
-      modifiers = cast(IPAConsonant, char).modifiers
+      modifiers += cast(IPAConsonant, char).modifiers
+    elif char.is_diacritic:
+      modifiers += [desc for desc in cast(IPADiacritic, char).descriptors if desc != 'diacritic']
   
   return (voicing, place, manner, modifiers)
 
@@ -200,7 +225,9 @@ def get_vowel_feats(row, col: str) -> tuple[str | None, str | None, str | None, 
       height = cast(IPAVowel, char).height
       backness = cast(IPAVowel, char).backness
       roundness = cast(IPAVowel, char).roundness
-      modifiers = cast(IPAVowel, char).modifiers
+      modifiers += cast(IPAVowel, char).modifiers
+    elif char.is_diacritic:
+      modifiers += [desc for desc in cast(IPADiacritic, char).descriptors if desc != 'diacritic']
     elif char.is_suprasegmental:
       length = cast(IPASuprasegmental, char).length or ''
   
