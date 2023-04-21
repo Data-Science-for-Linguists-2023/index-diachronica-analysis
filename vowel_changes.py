@@ -151,7 +151,10 @@ def extract_from_environment(environment: str) -> tuple[IPAString | None, IPAStr
   
   return (before, after)
 
-def extract_vowel_changes(from_sound: str, to_sound: str, environment: str, original_text: str) -> list[tuple[IPAString | None, IPAString, IPAString | None, IPAString | None, str]] | None:
+def get_parent_branch_index(branch_index: str):
+  return '.'.join(branch_index.split('.')[:-1])
+
+def extract_vowel_changes(from_sound: str, to_sound: str, environment: str, original_text: str, branch_index: str) -> list[tuple[IPAString | None, IPAString, IPAString | None, IPAString | None, str, str]] | None:
   from_tuple = extract_from_sound(from_sound)
   if from_tuple == None:
     return None
@@ -176,12 +179,12 @@ def extract_vowel_changes(from_sound: str, to_sound: str, environment: str, orig
           env_after = after
         change_tup = (env_before, from_vowel, to_vowel, env_after, original_text)
         if not any(str(change) == str(change_tup) for change in changes):
-          changes.append((env_before, from_vowel, to_vowel, env_after, original_text))
+          changes.append((env_before, from_vowel, to_vowel, env_after, original_text, get_parent_branch_index(branch_index)))
     if len(changes) == 0:
       return None
     return changes
   else:
-    return [(before, from_vowel, to_vowel, after, original_text)]
+    return [(before, from_vowel, to_vowel, after, original_text, get_parent_branch_index(branch_index))]
 
 def get_cons_feats(row, col: str) -> tuple[str | None, str | None, str | None, list[str] | None]:
   voicing: str = ''
@@ -233,23 +236,25 @@ def get_vowel_feats(row, col: str) -> tuple[str | None, str | None, str | None, 
   
   return (height, backness, roundness, modifiers, length)
 
-
 def run_extraction():
   rules: list[Rule] = pd.read_pickle('./data/rules.pkl')
   rules_df = pd.DataFrame.from_records([vars(rule) for rule in rules])
 
   extract_vowel_changes_vec = np.vectorize(extract_vowel_changes)
-  extracted = extract_vowel_changes_vec(rules_df['from_sound'], rules_df['to_sound'], rules_df['environment'], rules_df['original_text'])
+
+  unduped = rules_df.drop_duplicates(['from_sound', 'to_sound', 'environment', 'branch_index'], ignore_index=True)
+
+  extracted = extract_vowel_changes_vec(unduped['from_sound'], unduped['to_sound'], unduped['environment'], unduped['original_text'], unduped['branch_index'])
   extracted = extracted[extracted != None]
   extracted_flat = [item for sublist in extracted for item in sublist]
-  extracted_df = pd.DataFrame(extracted_flat, columns=['before', 'from_vowel', 'to_vowel', 'after', 'original_text'])
+  extracted_df = pd.DataFrame(extracted_flat, columns=['before', 'from_vowel', 'to_vowel', 'after', 'original_text', 'parent_index'])
 
   # Add columns for individual features of vowels
   extracted_df[['before_voicing', 'before_place', 'before_manner', 'before_modifiers']] = extracted_df.apply(get_cons_feats, axis=1, result_type='expand', col='before')
   extracted_df[['from_height', 'from_backness', 'from_roundness', 'from_modifiers', 'from_length']] = extracted_df.apply(get_vowel_feats, axis=1, result_type='expand', col='from_vowel')
   extracted_df[['to_height', 'to_backness', 'to_roundness', 'to_modifiers', 'to_length']] = extracted_df.apply(get_vowel_feats, axis=1, result_type='expand', col='to_vowel')
   extracted_df[['after_voicing', 'after_place', 'after_manner', 'after_modifiers']] = extracted_df.apply(get_cons_feats, axis=1, result_type='expand', col='after')
-
+  
   print(extracted_df.describe())
 
   with open('./data/vowel_changes.pkl', 'wb+') as vowel_changes_file:
