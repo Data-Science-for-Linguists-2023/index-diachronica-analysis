@@ -43,7 +43,7 @@ That second question was too broad, though, so I narrowed it down to specificall
 
 - How do neighboring consonants affect vowel changes?
 
-### The most common sound changes
+### [The most common sound changes](https://nbviewer.org/github/Data-Science-for-Linguists-2023/index-diachronica-analysis/blob/main/analysis.ipynb#most-common-sound-changes)
 
 While this question seems relatively straightforward, there is some ambiguity in it. What exactly does it mean for two sound changes to be 'the same'? I found that including different environments and intermediate steps essentially had the effect of answering a different question: "What are the most common sound changes *that have no specific environment or intermediate steps*?" This is because environments and intermediate steps are so variable and specific that there is very little overlap between exact environments or intermediate steps across different language families. Because of this, I just stuck to the simpler definition of "the same sound change", including only the 'from' and 'to' sounds.
 
@@ -81,7 +81,7 @@ What if deletions are excluded?
 
 There's still nothing too surprising here; most of these changes are either simple vowel changes, or changes between consonants that are very similar to each other. /ts/ → /s/ is probably the most interesting thing here, but it's still not very surprising that it's so high.
 
-### How neighboring consonants affect vowel changes
+### [How neighboring consonants affect vowel changes](https://nbviewer.org/github/Data-Science-for-Linguists-2023/index-diachronica-analysis/blob/main/analysis.ipynb#how-neighboring-consonants-affect-vowel-changes)
 
 This analysis was a bit more complex to do. First, how do you quantify "how" a sound changes? What I did was assign a number to the values of each vowel feature (e.g. 0 = open, 3 = mid, 6 = close, etc.) and find the difference between each start and end sound to get that feature's "change". I decided to look at preceding and following consonants separately, since I had a good idea of how I could do that and felt it was a good place to start (although, in the future, it'd definitely be worth looking at them together.) I then used statistical t-tests to determine if the 'average changes' in vowels preceded / followed by consonants with different features were significantly different from each other, and in what direction they differed. I also excluded duplicate sound changes shared by daughter languages within the same branch, like before.
 
@@ -120,7 +120,7 @@ There's no obvious explanation that I'm aware of for any of these effects -- it 
 
 My analysis of the most common sound changes was pretty straightforward, and the results were as well; the most common sound changes are simple sound changes from similar sounds, as well as deletions of common consonants, especially those that are more "subtle", like /h/.
 
-However, the analysis of how neighboring consonants effect vowel changes was a bit of a mess. Some results lined up with what I expected (palatals are associated with fronting, /w/ is associated with backing) but I couldn't explain most results at all. There are a handful of potential reasons for this. The first is the fact that there's really no way to separate the effects of correlated consonant features, making it impossible to really say *what* is causing the observed effects. I tried using linear regression to try and untangle this, but those results were even messier, so I didn't really dig into that further.
+However, the analysis of how neighboring consonants effect vowel changes was a bit of a mess. Some results lined up with what I expected (palatals are associated with fronting, /w/ is associated with backing) but I couldn't explain most results at all. There are a handful of potential reasons for this. The first is the fact that there's really no way to separate the effects of correlated consonant features, making it impossible to really say *what* is causing the observed effects. I [tried using linear regression](https://nbviewer.org/github/Data-Science-for-Linguists-2023/index-diachronica-analysis/blob/main/analysis.ipynb#a-short-foray-into-linear-regression-some-results) to try and untangle this, but those results were even messier, so I didn't really dig into that further.
 
 In addition, there are a lot of interacting factors that influence sound change; the easiest to explain (and the effects I was unsurprised by) are assimilation effects, but dissimilation is much more sporadic and hard to pin down direct causes for, and that may also be the cause of some of the more confusing effects I observed.
 
